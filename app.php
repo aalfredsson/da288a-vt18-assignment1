@@ -5,41 +5,37 @@ ini_set('display_errors', 'On');  //On or Off
 
 require("vendor/autoload.php");
 
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+$log = new Logger('Assignement 1');
+$log->pushHandler(new StreamHandler('greetings.log', Logger::INFO));
+
 use GuzzleHttp\Client;
 
 // Skapa en HTTP-client
 $client = new Client();
 
-
-
 if(isset($_GET['oneUnicorn'])) {
     $getUnicornId = $_GET['id'];
     if($getUnicornId != ""){
         try {
-            $res = getOneUnicorn($getUnicornId, $client);
-            // Omvandla JSON-svar till datatyper
-            $oneUnicorn = json_decode($res->getBody());
+            $oneUnicorn = getOneUnicorn($getUnicornId, $client, $log);
+
         } catch (Exception $e) {
             $errorMessage = "That unicorn doesn't exist";
         }
     } 
 
-
-    
-
-
 } elseif(isset($_GET['allUnicorns'])) {
 
-    $res = getAllUnicorns($client);
-    // Omvandla JSON-svar till datatyper
-    $allUnicorns = json_decode($res->getBody());
-
+    $allUnicorns = getAllUnicorns($client, $log);
 }
 
 
 
 // Anropa URL: http://unicorns.idioti.se/
-function getAllUnicorns($client){
+function getAllUnicorns($client, $log){
 
     $res = $client->request('GET', 'http://unicorns.idioti.se/', [
         'headers' => [
@@ -47,11 +43,14 @@ function getAllUnicorns($client){
         ]
     ]);
 
-    return $res;
+    $resJson = json_decode($res->getBody());
+    $log->info("Requested info about all unicorns");
+
+    return $resJson;
             
 }
 
-function getOneUnicorn($id, $client){
+function getOneUnicorn($id, $client, $log){
     $url = 'http://unicorns.idioti.se/' . $id;
 
     $res = $client->request('GET', $url, [
@@ -60,7 +59,10 @@ function getOneUnicorn($id, $client){
         ]
     ]);
 
-    return $res;
+    $resJson = json_decode($res->getBody());
+    $log->info("Requested info about: " . $resJson->name);
+
+    return $resJson;
 }
 
 
